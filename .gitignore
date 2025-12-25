@@ -130,9 +130,12 @@ ehthumbs.db
 Thumbs.db
 
 # Data and results
-data/MNIST/
+data/
 results/
 test_results/
 test_data/
 experiments/
 notebooks/
+
+# Temporary Test Directories
+test_*/

@@ -1,134 +1,108 @@
-# SyntheticDigits - MNIST GAN PyTorch Implementation
+# SyntheticDigits - Conditional WGAN-GP Implementation
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)](https://pytorch.org/)
 
-This project implements a Generative Adversarial Network (GAN) for generating synthetic MNIST digit images using PyTorch. The implementation uses a Deep Convolutional GAN (DCGAN) architecture.
+SyntheticDigits is a robust, research-grade implementation of a **Conditional Wasserstein GAN with Gradient Penalty (cWGAN-GP)**. It generates high-quality synthetic MNIST digit images and allows for controlled generation of specific digits.
 
-## Table of Contents
-- [Overview](#overview)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-- [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
+## Key Features
 
-## Overview
-
-This project, named SyntheticDigits, implements a Generative Adversarial Network (GAN) to generate synthetic MNIST digit images. The implementation includes:
-
-- Generator and Discriminator networks with convolutional layers
-- Configurable training parameters
-- Visualization tools for generated images
-- Loss tracking and plotting
-- Proper logging of training progress
-
-The GAN architecture is based on the DCGAN (Deep Convolutional GAN) approach, with:
-
-- Generator: Takes random noise and produces image-like outputs
-- Discriminator: Distinguishes between real and generated images
+*   **Conditional Generation**: Request specific digits (e.g., "generate a 7") using class-conditional embeddings.
+*   **WGAN-GP Architecture**: Uses Wasserstein Loss with Gradient Penalty and Spectral Normalization for superior training stability and resistance to mode collapse.
+*   **Experiment Tracking**: Integrated **TensorBoard** support for real-time monitoring of losses and generated image grids.
+*   **Robust Engineering**:
+    *   Modular Pydantic-based configuration.
+    *   Automatic device selection (CPU/CUDA).
+    *   Checkpointing and **Resume Training** capability.
+    *   Clean, packaged source structure.
 
 ## Project Structure
 
 ```
-├── configs/                 # Configuration files
-│   └── default_config.yaml  # Default configuration
-├── data/                    # Data loading utilities
-│   └── dataloader.py        # Data loading functions
-├── models/                  # Neural network architectures
-│   ├── generator.py         # Generator model
-│   └── discriminator.py     # Discriminator model
-├── trainers/                # Training logic
-│   └── gan_trainer.py       # GAN trainer class
-├── utils/                   # Utility functions
-│   ├── visualization.py     # Visualization utilities
-│   ├── logging.py           # Logging utilities
-│   └── config.py            # Configuration utilities
+├── configs/                 
+│   └── default_config.yaml  # Hyperparameters (WGAN-GP settings, etc.)
+├── src/                     
+│   └── syntheticdigits/     
+│       ├── config/          # Pydantic configuration schemas
+│       ├── data/            # Data loading (MNIST)
+│       ├── models/          # Conditional Generator & Discriminator
+│       ├── training/        # Trainer logic (WGAN loop, GP, Logging)
+│       └── utils/           # Utilities
 ├── tests/                   # Unit tests
-│   └── test_gan.py          # Tests for GAN components
-├── src/                     # Source package
-│   └── syntheticdigits/     # Main package
-├── results/                 # Output directory for results
-├── train.py                 # Main training script
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+├── results/                 # Output (Checkpoints, Logs, Images)
+├── train.py                 # Training entry point
+├── generate.py              # Inference entry point
+└── requirements.txt         
 ```
 
 ## Installation
 
 1. Clone the repository:
-```bash
-git clone https://github.com/BLShaw/SyntheticDigits.git
-cd SyntheticDigits
-```
+   ```bash
+   git clone https://github.com/BLShaw/SyntheticDigits.git
+   cd SyntheticDigits
+   ```
 
-2. Create a virtual environment (optional but recommended):
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install the required dependencies:
-```bash
-pip install -r requirements.txt
-```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ## Usage
 
-### Training the GAN
+### 1. Training
 
-To train the GAN with default settings:
-
-```bash
-python train.py
-```
-
-To train with a custom configuration file:
+Train the model using the default configuration (Conditional WGAN-GP):
 
 ```bash
-python train.py --config configs/default_config.yaml
+python train.py --epochs 50
 ```
 
-To override specific parameters:
+**Resume from a checkpoint** (useful if training was interrupted):
 
 ```bash
-python train.py --epochs 50 --output_dir custom_results
+python train.py --resume results/checkpoints/checkpoint_epoch_20.pth
 ```
 
-### Running Tests
-
-To run the unit tests:
+**Monitor with TensorBoard**:
 
 ```bash
-python -m pytest tests/
+tensorboard --logdir results/logs
 ```
 
-## Configuration
+### 2. Generation (Inference)
 
-The project uses YAML configuration files located in the `configs/` directory. The default configuration (`configs/default_config.yaml`) contains:
+Generate images using a trained checkpoint.
 
-- Model parameters (noise dimension, image channels, image size)
-- Training parameters (batch size, epochs, learning rate)
-- Data parameters (data directory)
-- Output parameters (results directory)
+**Generate a random grid of digits:**
+```bash
+python generate.py --checkpoint results/checkpoints/checkpoint_epoch_49.pth --output_dir my_results
+```
 
-You can create custom configurations by copying the default config and modifying the values.
+**Generate a specific digit (e.g., only 5s):**
+```bash
+python generate.py --checkpoint results/checkpoints/checkpoint_epoch_49.pth --output_dir my_fives --digit 5
+```
 
-## Results
+### 3. Configuration
 
-Training results are saved in the `results/` directory by default and include:
+Hyperparameters are managed in `configs/default_config.yaml`. Key WGAN-GP parameters include:
 
-- Generated images at specified epochs
-- Training loss plots
-- Saved model weights
-- Training logs
+```yaml
+training:
+  critic_iterations: 5   # Number of discriminator steps per generator step
+  lambda_gp: 10.0        # Gradient penalty coefficient
+  lr: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+```
 
-## Contributing
+## Architecture Details
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+*   **Generator**: Hybrid architecture using a Linear projection to 7x7 followed by `ConvTranspose2d` upsampling layers. Receives noise $z$ concatenated with a class embedding.
+*   **Discriminator**: Deep Convolutional network with **Spectral Normalization** and **Instance Normalization** (no Batch Norm, as required for WGAN-GP). Receives the image concatenated with a spatial class embedding.
+*   **Loss**: Wasserstein Loss $-(E[D(x)] - E[D(G(z))])$ + Gradient Penalty.
 
 ## License
 

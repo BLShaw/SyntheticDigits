@@ -1,28 +1,28 @@
-# Default Configuration for GAN Training
-
-# Model parameters
 model:
   noise_dim: 100
   img_channels: 1
   img_size: 28
+  features_g: 64
+  features_d: 64
+  num_classes: 10
+  embed_size: 50
 
-# Training parameters
 training:
   batch_size: 128
   epochs: 25
   lr: 0.0002
   beta1: 0.5
+  beta2: 0.999
+  critic_iterations: 5
+  lambda_gp: 10.0
+  device: "auto"
 
-# Data parameters
 data:
   data_dir: "./data"
+  num_workers: 2
   download: true
 
-# Output parameters
 output:
   output_dir: "results"
-
-# Visualization parameters
-visualization:
-  save_images_epochs: [1, 5, 10, 25, 50, 100]
-  sample_noise_size: 64
+  save_image_interval: 1
+  save_model_interval: 5
